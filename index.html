@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sympathia — Harmonic Composition Assistant</title>
+  <meta name="description" content="Sympathia assigns harmonic roles to each of your synthesisers, all derived from a single root key. When your synths begin to listen to each other." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Reset & Base ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #08080c;
+      --bg-surface:  #0e0e14;
+      --bg-raised:   #14141c;
+      --border:      #22222e;
+      --border-subtle: #1a1a24;
+      --text:        #ededee;
+      --text-dim:    #7a7a8e;
+      --text-faint:  #3a3a4a;
+      --accent:      #9b6dff;
+      --accent-dim:  #6d3fd4;
+      --accent-glow: rgba(155, 109, 255, 0.15);
+      --gold:        #c8934a;
+      --gold-dim:    #a0762e;
+      --radius:      4px;
+      --font-body:   'Space Grotesk', system-ui, sans-serif;
+      --font-serif:  'DM Serif Display', Georgia, serif;
+      --font-mono:   'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      --max-w:       1080px;
+      --col-gap:     2rem;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ─── Noise / Grid texture overlay ──────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 39px,
+          var(--border-subtle) 39px,
+          var(--border-subtle) 40px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 39px,
+          var(--border-subtle) 39px,
+          var(--border-subtle) 40px
+        );
+      opacity: 0.35;
+    }
+
+    /* ─── Layout helpers ─────────────────────────────────────────────────── */
+    .wrap {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    section { position: relative; z-index: 1; }
+
+    /* ─── Typography ─────────────────────────────────────────────────────── */
+    h1, h2, h3, h4 { line-height: 1.2; font-weight: 600; }
+
+    .label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    /* ─── Buttons ────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.4rem;
+      border-radius: var(--radius);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.18s, color 0.18s, border-color 0.18s, box-shadow 0.18s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0d0d0f;
+      border: 1px solid var(--accent);
+    }
+    .btn-primary:hover {
+      background: #20d4be;
+      border-color: #20d4be;
+      box-shadow: 0 0 18px rgba(26, 184, 164, 0.3);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: #3a3a40;
+    }
+
+    .btn-outline-accent {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent-dim);
+    }
+    .btn-outline-accent:hover {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+    }
+
+    /* ─── Nav ────────────────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 13, 15, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .wordmark {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: 0.01em;
+    }
+    .wordmark span { color: var(--accent); }
+
+    /* ─── Hero ───────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+      padding: 6rem 0 4rem;
+      overflow: hidden;
+    }
+
+    /* ─── Star field ─────────────────────────────────────────────────────── */
+    .hero-stars {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .hero-stars::before,
+    .hero-stars::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    /* Small stars */
+    .hero-stars::before {
+      background-image:
+        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.55) 0%, transparent 100%),
+        radial-gradient(1px 1px at 25% 8%,  rgba(255,255,255,0.45) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 22%, rgba(255,255,255,0.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 55% 5%,  rgba(255,255,255,0.5)  0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.4)  0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 12%, rgba(255,255,255,0.55) 0%, transparent 100%),
+        radial-gradient(1px 1px at 15% 35%, rgba(255,255,255,0.3)  0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 45%, rgba(255,255,255,0.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 62% 38%, rgba(255,255,255,0.4)  0%, transparent 100%),
+        radial-gradient(1px 1px at 78% 42%, rgba(255,255,255,0.3)  0%, transparent 100%),
+        radial-gradient(1px 1px at 92% 28%, rgba(255,255,255,0.45) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5%  55%, rgba(255,255,255,0.2)  0%, transparent 100%),
+        radial-gradient(1px 1px at 48% 62%, rgba(255,255,255,0.3)  0%, transparent 100%),
+        radial-gradient(1px 1px at 88% 58%, rgba(255,255,255,0.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 20% 72%, rgba(255,255,255,0.2)  0%, transparent 100%),
+        radial-gradient(1px 1px at 35% 80%, rgba(255,255,255,0.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 65% 75%, rgba(255,255,255,0.3)  0%, transparent 100%),
+        radial-gradient(1px 1px at 95% 70%, rgba(255,255,255,0.2)  0%, transparent 100%);
+      animation: starDrift 60s linear infinite;
+    }
+    /* Slightly larger stars */
+    .hero-stars::after {
+      background-image:
+        radial-gradient(1.5px 1.5px at 18% 20%, rgba(200,180,255,0.7) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 45% 10%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(2px   2px   at 72% 25%, rgba(180,160,255,0.5) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 90% 15%, rgba(255,255,255,0.65) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 8%  48%, rgba(200,180,255,0.4) 0%, transparent 100%),
+        radial-gradient(2px   2px   at 55% 50%, rgba(255,240,200,0.5) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 82% 45%, rgba(180,220,255,0.45) 0%, transparent 100%);
+      animation: starDrift 90s linear infinite reverse;
+    }
+    @keyframes starDrift {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(-40px); }
+    }
+
+    /* Animated nebula background */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 90% 70% at 15% 30%,  rgba(88,  28, 220, 0.22) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 90% at 85% 65%,  rgba(49,  18, 130, 0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 50% at 50% 10%,  rgba(155,109, 255, 0.10) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 60% at 75% 20%,  rgba(200, 80, 180, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 30% 80%,  rgba( 40, 18, 100, 0.20) 0%, transparent 60%),
+        radial-gradient(ellipse 30% 30% at 90% 90%,  rgba(245,158,  11, 0.06) 0%, transparent 50%);
+      animation: nebulaShift 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes nebulaShift {
+      0%   { opacity: 0.8; transform: scale(1)    translateX(0)   translateY(0); }
+      33%  { opacity: 1;   transform: scale(1.03) translateX(1%)  translateY(-0.5%); }
+      66%  { opacity: 0.9; transform: scale(1.05) translateX(-1%) translateY(0.5%); }
+      100% { opacity: 1;   transform: scale(1.02) translateX(0.5%) translateY(-1%); }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+    }
+
+    .hero-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .hero-eyebrow::after {
+      content: '';
+      display: block;
+      height: 1px;
+      width: 48px;
+      background: var(--accent);
+      opacity: 0.6;
+    }
+
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.05;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-tagline {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      color: var(--text-dim);
+      font-style: italic;
+      font-family: var(--font-serif);
+      margin-bottom: 1.25rem;
+      font-weight: 400;
+    }
+
+    .hero-desc {
+      font-size: 1rem;
+      color: var(--text-dim);
+      max-width: 520px;
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Waveform decoration */
+    .hero-visual {
+      position: absolute;
+      right: -2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    @media (max-width: 720px) {
+      .hero-visual { display: none; }
+    }
+
+    /* ─── Section shared ─────────────────────────────────────────────────── */
+    .section-header {
+      margin-bottom: 3.5rem;
+    }
+    .section-header h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      margin-top: 0.5rem;
+      color: var(--text);
+    }
+
+    /* ─── How it works ───────────────────────────────────────────────────── */
+    #how-it-works {
+      padding: 6rem 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+
+    .step {
+      padding: 2rem 2rem 2rem 0;
+      border-right: 1px solid var(--border-subtle);
+      padding-right: 2rem;
+    }
+    .step:last-child { border-right: none; padding-right: 0; }
+    .step:not(:first-child) { padding-left: 2rem; }
+
+    .step-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 1rem;
+    }
+
+    .step-icon {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 1.25rem;
+      color: var(--accent);
+    }
+
+    .step h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .step p {
+      font-size: 0.88rem;
+      color: var(--text-dim);
+      line-height: 1.65;
+    }
+
+    @media (max-width: 640px) {
+      .steps {
+        grid-template-columns: 1fr;
+      }
+      .step {
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+        padding: 1.5rem 0;
+      }
+      .step:last-child { border-bottom: none; }
+      .step:not(:first-child) { padding-left: 0; }
+    }
+
+    /* ─── Features ───────────────────────────────────────────────────────── */
+    #features {
+      padding: 6rem 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border-subtle);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      padding: 2rem;
+      transition: background 0.2s;
+    }
+    .feature-card:hover {
+      background: var(--bg-raised);
+    }
+
+    .feature-visual {
+      width: 100%;
+      height: 80px;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--text-dim);
+      line-height: 1.65;
+    }
+
+    @media (max-width: 768px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─── Who it's for ───────────────────────────────────────────────────── */
+    #who {
+      padding: 6rem 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .who-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .who-line {
+      display: flex;
+      align-items: baseline;
+      gap: 1.5rem;
+      padding: 1.75rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .who-line:last-child { border-bottom: none; }
+
+    .who-marker {
+      color: var(--accent);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      flex-shrink: 0;
+      min-width: 20px;
+    }
+
+    .who-line p {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .who-line p strong { color: var(--text); font-weight: 500; }
+
+    /* ─── Pricing ────────────────────────────────────────────────────────── */
+    #pricing {
+      padding: 6rem 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border-subtle);
+      border: 1px solid var(--border-subtle);
+      max-width: 760px;
+    }
+
+    .pricing-card {
+      background: var(--bg-surface);
+      padding: 2.5rem 2rem;
+    }
+
+    .pricing-card.featured {
+      background: var(--bg-raised);
+      position: relative;
+    }
+
+    .pricing-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #0d0d0f;
+      background: var(--accent);
+      padding: 0.2rem 0.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .pricing-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .pricing-price {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .pricing-price sup {
+      font-size: 1rem;
+      font-weight: 500;
+      vertical-align: top;
+      margin-top: 0.4rem;
+      display: inline-block;
+      color: var(--text-dim);
+    }
+    .pricing-price span.note {
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--text-dim);
+    }
+
+    .pricing-desc {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin-bottom: 1.75rem;
+      margin-top: 0.4rem;
+    }
+
+    .pricing-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+    }
+
+    .pricing-features li {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+    }
+    .pricing-features li::before {
+      content: '';
+      display: block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 0.5rem;
+      flex-shrink: 0;
+    }
+    .pricing-features li.muted::before {
+      background: var(--text-faint);
+    }
+    .pricing-features li.muted {
+      color: var(--text-faint);
+    }
+
+    @media (max-width: 580px) {
+      .pricing-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Waitlist ───────────────────────────────────────────────────────── */
+    #waitlist {
+      padding: 6rem 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .waitlist-inner {
+      max-width: 560px;
+    }
+
+    .waitlist-inner h2 {
+      font-size: clamp(1.6rem, 3vw, 2.1rem);
+      margin-bottom: 0.75rem;
+    }
+
+    .waitlist-inner p {
+      font-size: 0.92rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+    }
+
+    .waitlist-form {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .waitlist-form input[type="email"] {
+      flex: 1;
+      min-width: 220px;
+      padding: 0.65rem 1rem;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .waitlist-form input[type="email"]:focus {
+      border-color: var(--accent-dim);
+    }
+    .waitlist-form input[type="email"]::placeholder {
+      color: var(--text-faint);
+    }
+
+    .form-note {
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-faint);
+    }
+
+    .form-success {
+      display: none;
+      font-size: 0.9rem;
+      color: var(--accent);
+      margin-top: 1rem;
+    }
+
+    /* ─── Footer ─────────────────────────────────────────────────────────── */
+    footer {
+      padding: 2.5rem 0;
+      border-top: 1px solid var(--border-subtle);
+      position: relative;
+      z-index: 1;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .footer-copy {
+      font-size: 0.78rem;
+      color: var(--text-faint);
+    }
+    .footer-copy a {
+      color: var(--text-dim);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .footer-copy a:hover { color: var(--text); }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .footer-links a {
+      font-size: 0.78rem;
+      color: var(--text-faint);
+      text-decoration: none;
+    }
+    .footer-links a:hover { color: var(--text-dim); }
+
+    /* ─── Divider ─────────────────────────────────────────────────────────── */
+    .tick-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+    .tick-divider::before {
+      content: '';
+      display: block;
+      width: 2px;
+      height: 20px;
+      background: var(--accent);
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- ─── Nav ──────────────────────────────────────────────────────────── -->
+  <nav>
+    <div class="wrap nav-inner">
+      <a href="#" class="wordmark">Sympathia<span>.</span></a>
+      <a href="#waitlist" class="btn btn-primary">Join waitlist</a>
+    </div>
+  </nav>
+
+
+  <!-- ─── Hero ─────────────────────────────────────────────────────────── -->
+  <section class="hero">
+
+    <!-- Star field -->
+    <div class="hero-stars" aria-hidden="true"></div>
+
+    <!-- Abstract waveform — hero decoration -->
+    <div class="hero-visual" aria-hidden="true">
+      <svg width="520" height="320" viewBox="0 0 520 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Root scale grid lines -->
+        <g stroke="#9b6dff" stroke-width="0.5" opacity="0.6">
+          <line x1="0" y1="160" x2="520" y2="160" />
+          <line x1="0" y1="120" x2="520" y2="120" />
+          <line x1="0" y1="200" x2="520" y2="200" />
+          <line x1="0" y1="80"  x2="520" y2="80" />
+          <line x1="0" y1="240" x2="520" y2="240" />
+        </g>
+        <!-- Harmonic wave 1 (fundamental) -->
+        <path d="M0 160 C60 100 120 220 180 160 S300 100 360 160 S440 220 520 160"
+              stroke="#9b6dff" stroke-width="1.5" fill="none" opacity="0.9">
+          <animate attributeName="d"
+            values="
+              M0 160 C60 100 120 220 180 160 S300 100 360 160 S440 220 520 160;
+              M0 160 C60 130 120 190 180 160 S300 130 360 160 S440 190 520 160;
+              M0 160 C60 100 120 220 180 160 S300 100 360 160 S440 220 520 160
+            "
+            dur="8s" repeatCount="indefinite" />
+        </path>
+        <!-- Harmonic wave 2 (fifth) -->
+        <path d="M0 160 C40 60 80 260 120 160 S200 60 240 160 S320 260 360 160 S440 60 520 160"
+              stroke="#c8934a" stroke-width="1" fill="none" opacity="0.5">
+          <animate attributeName="d"
+            values="
+              M0 160 C40 60 80 260 120 160 S200 60 240 160 S320 260 360 160 S440 60 520 160;
+              M0 160 C40 80 80 240 120 160 S200 80 240 160 S320 240 360 160 S440 80 520 160;
+              M0 160 C40 60 80 260 120 160 S200 60 240 160 S320 260 360 160 S440 60 520 160
+            "
+            dur="12s" repeatCount="indefinite" />
+        </path>
+        <!-- Harmonic wave 3 (third) — subtle -->
+        <path d="M0 160 C26 40 52 280 78 160 S130 40 156 160 S208 280 234 160 S286 40 312 160 S364 280 390 160 S442 40 520 160"
+              stroke="#9b6dff" stroke-width="0.5" fill="none" opacity="0.25">
+        </path>
+        <!-- Vertical markers for scale degrees -->
+        <g stroke="#9b6dff" stroke-width="0.5" opacity="0.3">
+          <line x1="74"  y1="140" x2="74"  y2="180" />
+          <line x1="148" y1="140" x2="148" y2="180" />
+          <line x1="222" y1="140" x2="222" y2="180" />
+          <line x1="296" y1="140" x2="296" y2="180" />
+          <line x1="370" y1="140" x2="370" y2="180" />
+          <line x1="444" y1="140" x2="444" y2="180" />
+        </g>
+        <!-- Scale degree dots -->
+        <g fill="#9b6dff" opacity="0.7">
+          <circle cx="74"  cy="160" r="3" />
+          <circle cx="148" cy="130" r="2.5" />
+          <circle cx="222" cy="160" r="3" />
+          <circle cx="296" cy="148" r="2.5" />
+          <circle cx="370" cy="160" r="3" />
+          <circle cx="444" cy="135" r="2.5" />
+        </g>
+      </svg>
+    </div>
+
+    <div class="wrap">
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          <span class="label">Harmonic Composition Assistant</span>
+        </div>
+        <h1>Sympathia</h1>
+        <p class="hero-tagline">Give each synth a reason to exist.</p>
+        <p class="hero-desc">
+          When your synths begin to listen to each other. Sympathia assigns a harmonic role —
+          mode, exotic scale, or negative harmony — to each instrument in your rig.
+          One root key. Every voice, finally in agreement.
+        </p>
+        <div class="hero-ctas">
+          <a href="#waitlist" class="btn btn-primary">Join the waitlist</a>
+          <a href="#how-it-works" class="btn btn-ghost">See how it works</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── How it works ──────────────────────────────────────────────────── -->
+  <section id="how-it-works">
+    <div class="wrap">
+      <div class="section-header">
+        <div class="tick-divider">
+          <span class="label">Process</span>
+        </div>
+        <h2>How it works</h2>
+      </div>
+
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-num">01</div>
+          <!-- Key / root icon -->
+          <svg class="step-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="14" cy="22" r="7" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="14" cy="22" r="2.5" fill="currentColor" opacity="0.4"/>
+            <line x1="21" y1="22" x2="36" y2="22" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="30" y1="22" x2="30" y2="27" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="35" y1="22" x2="35" y2="26" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <h3>Choose your root key</h3>
+          <p>Set a single tonic. Sympathia uses this as the centre of gravity for every harmonic decision across your entire rig.</p>
+        </div>
+
+        <div class="step">
+          <div class="step-num">02</div>
+          <!-- Synth grid icon -->
+          <svg class="step-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4"  y="8"  width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="19" y="8"  width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="4"  y="24" width="10" height="8"  rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="19" y="24" width="10" height="8"  rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="33" y1="8" x2="33" y2="32" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2"/>
+            <circle cx="33" cy="20" r="2" fill="currentColor" opacity="0.6"/>
+          </svg>
+          <h3>Assign each synth a harmonic role</h3>
+          <p>Give each instrument its own mode or scale — Lydian, Phrygian, Hirajoshi — all mathematically derived from your root. No guesswork.</p>
+        </div>
+
+        <div class="step">
+          <div class="step-num">03</div>
+          <!-- Waveform / agreement icon -->
+          <svg class="step-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2 20 C5 14 8 26 11 20 S17 14 20 20 S26 26 29 20 S35 14 38 20"
+                  stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <circle cx="20" cy="20" r="3" fill="currentColor" opacity="0.5"/>
+            <line x1="20" y1="6" x2="20" y2="10" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+            <line x1="20" y1="30" x2="20" y2="34" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          </svg>
+          <h3>Play — your synths finally agree</h3>
+          <p>Every note suggestion across every synth is in harmonic coherence. Layer textures, counter-melodies, and colour without the theory overhead.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── Features ─────────────────────────────────────────────────────── -->
+  <section id="features">
+    <div class="wrap">
+      <div class="section-header">
+        <div class="tick-divider">
+          <span class="label">Features</span>
+        </div>
+        <h2>Built for the way you actually work</h2>
+      </div>
+
+      <div class="features-grid">
+
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <!-- Abstract: scale degree map SVG -->
+          <svg class="feature-visual" viewBox="0 0 260 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <line x1="0" y1="60" x2="260" y2="60" stroke="#252529" stroke-width="1"/>
+            <!-- Scale degree bars -->
+            <rect x="10"  y="30" width="18" height="30" fill="#9b6dff" opacity="0.8"/>
+            <rect x="40"  y="44" width="18" height="16" fill="#9b6dff" opacity="0.4"/>
+            <rect x="70"  y="22" width="18" height="38" fill="#9b6dff" opacity="0.7"/>
+            <rect x="100" y="38" width="18" height="22" fill="#c8934a" opacity="0.5"/>
+            <rect x="130" y="14" width="18" height="46" fill="#9b6dff" opacity="0.9"/>
+            <rect x="160" y="42" width="18" height="18" fill="#9b6dff" opacity="0.3"/>
+            <rect x="190" y="28" width="18" height="32" fill="#c8934a" opacity="0.4"/>
+            <rect x="220" y="50" width="18" height="10" fill="#9b6dff" opacity="0.3"/>
+            <!-- Roman numerals -->
+            <text x="19"  y="76" font-family="Space Grotesk, sans-serif" font-size="7" fill="#454549" text-anchor="middle">I</text>
+            <text x="49"  y="76" font-family="Space Grotesk, sans-serif" font-size="7" fill="#454549" text-anchor="middle">II</text>
+            <text x="79"  y="76" font-family="Space Grotesk, sans-serif" font-size="7" fill="#454549" text-anchor="middle">III</text>
+            <text x="109" y="76" font-family="Space Grotesk, sans-serif" font-size="7" fill="#454549" text-anchor="middle">IV</text>
+            <text x="139" y="76" font-family="Space Grotesk, sans-serif" font-size="7" fill="#454549" text-anchor="middle">V</text>
+            <text x="169" y="76" font-family="Space Grotesk, sans-serif" font-size="7" fill="#454549" text-anchor="middle">VI</text>
+            <text x="199" y="76" font-family="Space Grotesk, sans-serif" font-size="7" fill="#454549" text-anchor="middle">VII</text>
+          </svg>
+          <h3>Harmonic Role Assignment</h3>
+          <!-- Replace with final product description for Harmonic Role Assignment feature -->
+          <p>One root. Every role covered. Pick your key and Sympathia distributes harmonic responsibility across your synths — dominant fifth here, natural minor there, negative harmony for the one that always sounds wrong in a good way. No theory degree required.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <!-- Abstract: circular scale diagram SVG -->
+          <svg class="feature-visual" viewBox="0 0 260 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Concentric rings -->
+            <circle cx="40" cy="40" r="30" stroke="#252529" stroke-width="1"/>
+            <circle cx="40" cy="40" r="20" stroke="#9b6dff" stroke-width="0.75" opacity="0.4"/>
+            <circle cx="40" cy="40" r="10" stroke="#9b6dff" stroke-width="1" opacity="0.7"/>
+            <!-- Scale points on outer ring -->
+            <circle cx="40"    cy="10"   r="2.5" fill="#9b6dff" opacity="0.9"/>
+            <circle cx="64.1"  cy="19.9" r="2.5" fill="#9b6dff" opacity="0.5"/>
+            <circle cx="68"    cy="46"   r="2.5" fill="#c8934a" opacity="0.7"/>
+            <circle cx="52"    cy="67"   r="2.5" fill="#9b6dff" opacity="0.5"/>
+            <circle cx="28"    cy="67"   r="2.5" fill="#9b6dff" opacity="0.8"/>
+            <circle cx="12"    cy="46"   r="2.5" fill="#9b6dff" opacity="0.4"/>
+            <circle cx="15.9"  cy="19.9" r="2.5" fill="#c8934a" opacity="0.6"/>
+            <!-- Polygon connecting scale points -->
+            <polygon points="40,10 64.1,19.9 68,46 52,67 28,67 12,46 15.9,19.9"
+                     stroke="#9b6dff" stroke-width="0.75" fill="#9b6dff" fill-opacity="0.06"/>
+            <!-- Scale labels on right side -->
+            <text x="90"  y="18" font-family="Space Grotesk, sans-serif" font-size="8" fill="#7a7a82">Hirajoshi</text>
+            <text x="90"  y="32" font-family="Space Grotesk, sans-serif" font-size="8" fill="#7a7a82">Double Harmonic</text>
+            <text x="90"  y="46" font-family="Space Grotesk, sans-serif" font-size="8" fill="#c8934a">Prometheus</text>
+            <text x="90"  y="60" font-family="Space Grotesk, sans-serif" font-size="8" fill="#7a7a82">Enigmatic</text>
+            <text x="90"  y="74" font-family="Space Grotesk, sans-serif" font-size="8" fill="#7a7a82">Negative Harmony</text>
+          </svg>
+          <h3>Exotic Scale Library</h3>
+          <!-- Replace with final product description for Exotic Scale Library feature -->
+          <p>Beyond major and minor. Sympathia includes Ukrainian Dorian, Japanese Hirajoshi, Spanish Phrygian, and a growing collection of world scales — all transposed to your root key and ready to assign. If you've ever wanted your second oscillator to sound like it's from a different continent, now it can be.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <!-- Abstract: per-synth card diagram SVG -->
+          <svg class="feature-visual" viewBox="0 0 260 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Card 1 -->
+            <rect x="8"   y="10" width="68" height="58" rx="2" stroke="#252529" stroke-width="1" fill="#111114"/>
+            <line x1="8" y1="24" x2="76" y2="24" stroke="#252529" stroke-width="1"/>
+            <rect x="14" y="14" width="30" height="6" rx="1" fill="#9b6dff" opacity="0.5"/>
+            <rect x="14" y="30" width="52" height="2" rx="1" fill="#252529"/>
+            <rect x="14" y="36" width="38" height="2" rx="1" fill="#252529"/>
+            <rect x="14" y="42" width="44" height="2" rx="1" fill="#252529"/>
+            <rect x="14" y="52" width="20" height="10" rx="1" fill="#9b6dff" opacity="0.15" stroke="#9b6dff" stroke-width="0.75"/>
+            <text x="24" y="59" font-family="Space Grotesk, sans-serif" font-size="6.5" fill="#9b6dff" text-anchor="middle">Lydian</text>
+            <!-- Card 2 (offset) -->
+            <rect x="90"  y="10" width="68" height="58" rx="2" stroke="#252529" stroke-width="1" fill="#111114"/>
+            <line x1="90" y1="24" x2="158" y2="24" stroke="#252529" stroke-width="1"/>
+            <rect x="96" y="14" width="38" height="6" rx="1" fill="#c8934a" opacity="0.4"/>
+            <rect x="96" y="30" width="52" height="2" rx="1" fill="#252529"/>
+            <rect x="96" y="36" width="30" height="2" rx="1" fill="#252529"/>
+            <rect x="96" y="42" width="46" height="2" rx="1" fill="#252529"/>
+            <rect x="96" y="52" width="28" height="10" rx="1" fill="#c8934a" opacity="0.12" stroke="#c8934a" stroke-width="0.75"/>
+            <text x="110" y="59" font-family="Space Grotesk, sans-serif" font-size="6.5" fill="#c8934a" text-anchor="middle">Phrygian</text>
+            <!-- Card 3 (partial, peeking) -->
+            <rect x="172" y="10" width="68" height="58" rx="2" stroke="#9b6dff" stroke-width="0.75" fill="#111114" opacity="0.6"/>
+            <line x1="172" y1="24" x2="240" y2="24" stroke="#252529" stroke-width="1"/>
+            <rect x="178" y="14" width="24" height="6" rx="1" fill="#9b6dff" opacity="0.3"/>
+          </svg>
+          <h3>Per-Synth Setup Cards</h3>
+          <!-- Replace with final product description for Per-Synth Setup Cards feature -->
+          <p>Every synth gets its brief. Each instrument in your rig receives a clean, readable setup card: its harmonic role, its assigned scale, its MIDI channel, and the specific notes it should prioritise. No guessing, no scribbled Post-its on the back of the rack.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── Who it's for ─────────────────────────────────────────────────── -->
+  <section id="who">
+    <div class="wrap">
+      <div class="section-header">
+        <div class="tick-divider">
+          <span class="label">Who it's for</span>
+        </div>
+        <h2>Made for serious synth players</h2>
+      </div>
+
+      <div class="who-lines">
+
+        <div class="who-line">
+          <span class="who-marker">→</span>
+          <!-- Replace with punchy one-liner describing target user type 1 -->
+          <p><strong>If you own more synths than you have patch cables for</strong> — and you know exactly which ones you reach for first.</p>
+        </div>
+
+        <div class="who-line">
+          <span class="who-marker">→</span>
+          <!-- Replace with punchy one-liner describing target user type 2 -->
+          <p><strong>If you've ever spent 40 minutes making your Juno and your Hydrasynth agree</strong> — and still weren't sure they were actually in the same key.</p>
+        </div>
+
+        <div class="who-line">
+          <span class="who-marker">→</span>
+          <!-- Replace with punchy one-liner describing target user type 3 -->
+          <p><strong>If the word "Dorian" means something to you</strong> — and you want your whole rig to speak the same harmonic language, without opening a theory textbook.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── Pricing ───────────────────────────────────────────────────────── -->
+  <section id="pricing">
+    <div class="wrap">
+      <div class="section-header">
+        <div class="tick-divider">
+          <span class="label">Pricing</span>
+        </div>
+        <h2>Simple pricing. No subscriptions.</h2>
+      </div>
+
+      <div class="pricing-grid">
+
+        <!-- Free tier -->
+        <div class="pricing-card">
+          <div class="pricing-name">Free</div>
+          <div class="pricing-price">£0</div>
+          <div class="pricing-desc">For trying it out. No card required.</div>
+          <ul class="pricing-features">
+            <li>Up to 3 synthesisers</li>
+            <li>Standard diatonic modes</li>
+            <li>MIDI note display</li>
+            <li>Root key selector</li>
+            <li class="muted">Exotic scale library</li>
+            <li class="muted">Save &amp; export</li>
+            <li class="muted">Unlimited synths</li>
+          </ul>
+          <a href="#waitlist" class="btn btn-ghost" style="width:100%; justify-content:center;">Join the waitlist</a>
+        </div>
+
+        <!-- Full tier -->
+        <div class="pricing-card featured">
+          <div class="pricing-badge">Full</div>
+          <div class="pricing-name">One-time purchase</div>
+          <div class="pricing-price"><sup>£</sup>20 <span class="note">once, forever</span></div>
+          <div class="pricing-desc">Licence key via Gumroad. App not yet launched — join the waitlist.</div>
+          <ul class="pricing-features">
+            <li>Unlimited synthesisers</li>
+            <li>All diatonic modes</li>
+            <li>MIDI note display</li>
+            <li>Root key selector</li>
+            <li>Exotic scale library</li>
+            <li>Save &amp; export layouts</li>
+            <li>Negative harmony mode</li>
+          </ul>
+          <a href="#waitlist" class="btn btn-outline-accent" style="width:100%; justify-content:center;">Join the waitlist</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── Waitlist ─────────────────────────────────────────────────────── -->
+  <section id="waitlist">
+    <div class="wrap">
+      <div class="waitlist-inner">
+        <div class="tick-divider">
+          <span class="label">Early access</span>
+        </div>
+        <h2>Be the first to know when Sympathia launches.</h2>
+        <p>Enter your email and we'll let you know when the app is ready. No noise, no newsletters — just a single message when it's live.</p>
+
+        <!-- Buttondown waitlist form -->
+        <!-- Form submits to Buttondown embed-subscribe endpoint for the 'sympathia' list -->
+        <form
+          action="https://buttondown.com/api/emails/embed-subscribe/sympathia"
+          method="POST"
+          target="_blank"
+          class="waitlist-form"
+          id="waitlist-form"
+        >
+          <input type="hidden" name="tag" value="waitlist" />
+          <input
+            type="email"
+            name="email"
+            id="waitlist-email"
+            placeholder="your@email.com"
+            required
+            autocomplete="email"
+          />
+          <button type="submit" class="btn btn-primary">Notify me</button>
+        </form>
+        <p class="form-note">No spam. Unsubscribe any time. Powered by Buttondown.</p>
+        <p class="form-success" id="form-success" role="alert">You're on the list. We'll be in touch.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── Footer ───────────────────────────────────────────────────────── -->
+  <footer>
+    <div class="wrap footer-inner">
+      <p class="footer-copy">
+        © 2026 Sympathia · Made by a synth player, for synth players
+        <!-- [GUMROAD_LINK] Replace href below with your Gumroad product URL when live -->
+        &nbsp;·&nbsp;<a href="#" aria-label="Gumroad (coming soon)">Gumroad</a>
+      </p>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="#how-it-works">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#waitlist">Waitlist</a>
+      </nav>
+    </div>
+  </footer>
+
+
+  <!-- ─── GoatCounter analytics ─────────────────────────────────────────── -->
+  <script data-goatcounter="https://sympathia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+  <script>
+    // Smooth scroll offset for sticky nav
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const target = document.querySelector(this.getAttribute('href'));
+        if (!target) return;
+        e.preventDefault();
+        const offset = 64; // nav height
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+      });
+    });
+
+    // Waitlist form: show success message in-page if possible
+    // (form still submits to Buttondown in new tab as fallback)
+    const form = document.getElementById('waitlist-form');
+    const success = document.getElementById('form-success');
+    if (form && success) {
+      form.addEventListener('submit', () => {
+        setTimeout(() => {
+          success.style.display = 'block';
+        }, 400);
+      });
+    }
+  </script>
+
+</body>
+</html>
