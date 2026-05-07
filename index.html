@@ -1071,7 +1071,6 @@
         <form
           action="https://buttondown.com/api/emails/embed-subscribe/sympathia"
           method="POST"
-          target="_blank"
           class="waitlist-form"
           id="waitlist-form"
         >
@@ -1127,15 +1126,40 @@
       });
     });
 
-    // Waitlist form: show success message in-page if possible
-    // (form still submits to Buttondown in new tab as fallback)
+    // Waitlist form: AJAX submit to Buttondown
     const form = document.getElementById('waitlist-form');
     const success = document.getElementById('form-success');
-    if (form && success) {
-      form.addEventListener('submit', () => {
-        setTimeout(() => {
-          success.style.display = 'block';
-        }, 400);
+    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+    if (form && success && submitBtn) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Joining…';
+
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { Accept: 'application/json' },
+          });
+
+          if (res.ok) {
+            form.reset();
+            submitBtn.style.display = 'none';
+            success.style.display = 'block';
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Notify me';
+            // Surface a brief error without clobbering the success message
+            const note = form.nextElementSibling;
+            if (note) note.textContent = 'Something went wrong — please try again.';
+          }
+        } catch (_) {
+          // Network failure: fall back to a plain form POST in a new tab
+          form.setAttribute('target', '_blank');
+          form.submit();
+        }
       });
     }
   </script>
