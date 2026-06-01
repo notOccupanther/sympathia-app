@@ -479,116 +479,6 @@
     }
     .who-line p strong { color: var(--text); font-weight: 500; }
 
-    /* ─── Pricing ────────────────────────────────────────────────────────── */
-    #pricing {
-      padding: 6rem 0;
-      border-top: 1px solid var(--border-subtle);
-    }
-
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      background: var(--border-subtle);
-      border: 1px solid var(--border-subtle);
-      max-width: 760px;
-    }
-
-    .pricing-card {
-      background: var(--bg-surface);
-      padding: 2.5rem 2rem;
-    }
-
-    .pricing-card.featured {
-      background: var(--bg-raised);
-      position: relative;
-    }
-
-    .pricing-badge {
-      display: inline-block;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #0d0d0f;
-      background: var(--accent);
-      padding: 0.2rem 0.6rem;
-      margin-bottom: 1rem;
-    }
-
-    .pricing-name {
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 0.5rem;
-    }
-
-    .pricing-price {
-      font-size: 2.25rem;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1;
-      margin-bottom: 0.25rem;
-    }
-    .pricing-price sup {
-      font-size: 1rem;
-      font-weight: 500;
-      vertical-align: top;
-      margin-top: 0.4rem;
-      display: inline-block;
-      color: var(--text-dim);
-    }
-    .pricing-price span.note {
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: var(--text-dim);
-    }
-
-    .pricing-desc {
-      font-size: 0.82rem;
-      color: var(--text-dim);
-      margin-bottom: 1.75rem;
-      margin-top: 0.4rem;
-    }
-
-    .pricing-features {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      margin-bottom: 2rem;
-    }
-
-    .pricing-features li {
-      font-size: 0.85rem;
-      color: var(--text-dim);
-      display: flex;
-      align-items: flex-start;
-      gap: 0.6rem;
-    }
-    .pricing-features li::before {
-      content: '';
-      display: block;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--accent);
-      margin-top: 0.5rem;
-      flex-shrink: 0;
-    }
-    .pricing-features li.muted::before {
-      background: var(--text-faint);
-    }
-    .pricing-features li.muted {
-      color: var(--text-faint);
-    }
-
-    @media (max-width: 580px) {
-      .pricing-grid { grid-template-columns: 1fr; }
-    }
-
     /* ─── Waitlist ───────────────────────────────────────────────────────── */
     #waitlist {
       padding: 6rem 0;
@@ -1004,58 +894,6 @@
   </section>
 
 
-  <!-- ─── Pricing ───────────────────────────────────────────────────────── -->
-  <section id="pricing">
-    <div class="wrap">
-      <div class="section-header">
-        <div class="tick-divider">
-          <span class="label">Pricing</span>
-        </div>
-        <h2>Simple pricing. No subscriptions.</h2>
-      </div>
-
-      <div class="pricing-grid">
-
-        <!-- Free tier -->
-        <div class="pricing-card">
-          <div class="pricing-name">Free</div>
-          <div class="pricing-price">£0</div>
-          <div class="pricing-desc">For trying it out. No card required.</div>
-          <ul class="pricing-features">
-            <li>Up to 3 synthesisers</li>
-            <li>Standard diatonic modes</li>
-            <li>MIDI note display</li>
-            <li>Root key selector</li>
-            <li class="muted">Exotic scale library</li>
-            <li class="muted">Save &amp; export</li>
-            <li class="muted">Unlimited synths</li>
-          </ul>
-          <a href="#waitlist" class="btn btn-ghost" style="width:100%; justify-content:center;">Join the waitlist</a>
-        </div>
-
-        <!-- Full tier -->
-        <div class="pricing-card featured">
-          <div class="pricing-badge">Full</div>
-          <div class="pricing-name">One-time purchase</div>
-          <div class="pricing-price"><sup>£</sup>20 <span class="note">once, forever</span></div>
-          <div class="pricing-desc">Licence key via Gumroad. App not yet launched — join the waitlist.</div>
-          <ul class="pricing-features">
-            <li>Unlimited synthesisers</li>
-            <li>All diatonic modes</li>
-            <li>MIDI note display</li>
-            <li>Root key selector</li>
-            <li>Exotic scale library</li>
-            <li>Save &amp; export layouts</li>
-            <li>Negative harmony mode</li>
-          </ul>
-          <a href="#waitlist" class="btn btn-outline-accent" style="width:100%; justify-content:center;">Join the waitlist</a>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
   <!-- ─── Waitlist ─────────────────────────────────────────────────────── -->
   <section id="waitlist">
     <div class="wrap">
@@ -1097,13 +935,10 @@
     <div class="wrap footer-inner">
       <p class="footer-copy">
         © 2026 Sympathia · Made by a synth player, for synth players
-        <!-- [GUMROAD_LINK] Replace href below with your Gumroad product URL when live -->
-        &nbsp;·&nbsp;<a href="#" aria-label="Gumroad (coming soon)">Gumroad</a>
       </p>
       <nav class="footer-links" aria-label="Footer navigation">
         <a href="#how-it-works">How it works</a>
         <a href="#features">Features</a>
-        <a href="#pricing">Pricing</a>
         <a href="#waitlist">Waitlist</a>
       </nav>
     </div>
